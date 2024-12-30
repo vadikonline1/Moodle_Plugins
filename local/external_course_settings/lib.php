@@ -104,48 +104,46 @@ function check_user_ip() {
                 if ($intvalue == 1) {
                     // Daca intvalue este 1, blocam accesul
                     error_log("Course_ID: {$course_id}, Access_External: {$intvalue} Invalid IP: {$user_ip} - User Details: ID={$USER->id}, Username={$USER->username} - Email={$USER->email} - Redirecting to error page.");
-                    redirect(new moodle_url('/local/External_Course_Settings/error.php')); // Redirectioneaza catre pagina de eroare
+                    redirect(new moodle_url('/local/external_Course_settings/error.php')); // Redirectioneaza catre pagina de eroare
                 }
                 // Daca intvalue NU este 1, accesul este permis, nu se face nicio redirectionare
             }
         } else {
             // Daca nu se gaseste nicio valoare pentru customfield_data
             error_log("Course_ID: {$course_id}, Nu s-a gasit niciun record in customfield_data pentru acest curs.");
-            redirect(new moodle_url('/local/External_Course_Settings/error.php')); // Redirectioneaza catre pagina de eroare
+            redirect(new moodle_url('/local/external_Course_settings/error.php')); // Redirectioneaza catre pagina de eroare
         }
     } else {
         // Daca nu se gaseste campul cu shortname-ul 'external_course'
         error_log("Course_ID: {$course_id}, Nu s-a gasit niciun camp cu shortname-ul specificat.");
-        redirect(new moodle_url('/local/External_Course_Settings/error.php')); // Redirectioneaza catre pagina de eroare
+        redirect(new moodle_url('/local/external_Course_settings/error.php')); // Redirectioneaza catre pagina de eroare
     }
 }
 
 // Functia care va fi apelata la accesarea unui curs
-function local_External_Course_Settings_extend_navigation_course($navref, $course, $context) {
+function local_external_course_settings_extend_navigation_course($navref, $course, $context) {
     // Verifica IP-ul utilizatorului la accesarea unui curs
     check_user_ip();
 }
 
 // Functia care va fi apelata cand un utilizator se logheaza
-function local_External_Course_Settings_user_login($user) {
+function local_external_course_settings_user_login($user) {
     // Verifica IP-ul utilizatorului la logare
     check_user_ip();
 }
 
 // Functia de activare a pluginului
-function local_External_Course_Settings_activate() {
+function local_external_course_settings_activate() {
     global $DB;
 
     $existing_category = $DB->get_record('customfield_category', array('name' => 'External_Course_Settings'));
-    $category_record = $DB->get_record('customfield_category', array('name' => 'External_Course_Settings'));
-    $id_customfield_category = $category_record->id;
     $existing_field = $DB->get_record('customfield_field', array('shortname' => 'external_course'));
     
 
     if (!$existing_category) {
         $record = new stdClass();
         $record->name = 'External_Course_Settings';
-        $record->description = 'Settings for external courses. No - acces denied, Yes - acces permitted';
+        $record->description = 'Settings for external courses. No - access denied, Yes - access permitted';
         $record->contextlevel = CONTEXT_COURSE;
         $record->descriptionformat = 0; // Descrierea in format text (plain)
         $record->sortorder = 0;         // Ordinea de sortare
@@ -158,12 +156,15 @@ function local_External_Course_Settings_activate() {
         $DB->insert_record('customfield_category', $record);
     }
     
+	$category_record = $DB->get_record('customfield_category', array('name' => 'External_Course_Settings'));
+    $id_customfield_category = $category_record->id;
+	
     if (!$existing_field) {
         $field_record = new stdClass();
         $field_record->shortname = 'external_course';
         $field_record->name = 'Access External Course';
         $field_record->type = 'select';
-        $field_record->description = 'Settings for external courses. No - acces denied, Yes - acces permitted';
+        $field_record->description = 'Settings for external courses. No - access denied, Yes - access permitted';
         $field_record->descriptionformat = 1; // Descrierea in format text (plain)
         $field_record->sortorder = 0;         // Ordinea de sortare
         $field_record->categoryid = $id_customfield_category;
@@ -183,7 +184,7 @@ function local_External_Course_Settings_activate() {
 }
 
 // Functia de dezactivare a pluginului
-function local_External_Course_Settings_deactivate() {
+function local_external_course_settings_deactivate() {
     global $DB;
 
     $existing_category = $DB->get_record('customfield_category', array('name' => 'External_Course_Settings'));
@@ -202,16 +203,16 @@ function local_External_Course_Settings_deactivate() {
 }
 
 // Functie pentru a adauga campul 'restriction_course' in setarile cursului
-function local_External_Course_Settings_extend_course_settings_navigation($settingsnav, $course, $context) {
+function local_external_course_settings_extend_course_settings_navigation($settingsnav, $course, $context) {
     global $PAGE;
 
     // Adaugam un nou camp in setarile cursului
-    $url = new moodle_url('/local/External_Course_Settings/edit.php', array('id' => $course->id));
+    $url = new moodle_url('/local/external_Course_settings/edit.php', array('id' => $course->id));
     $settingsnav->add('External Course Settings', $url);
 }
 
 // Functie pentru a salva valoarea campului 'restriction_course'
-function local_External_Course_Settings_save_restriction($courseid, $restriction) {
+function local_external_course_settings_save_restriction($courseid, $restriction) {
     global $DB;
 
     // Actualizam campul 'restriction_course' in tabelul 'course'
