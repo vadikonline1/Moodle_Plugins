@@ -79,12 +79,18 @@ function check_user_ip() {
         }
     }
 
-    // 2. Preluarea ID-ului campului pe baza shortname-ului 'external_course'
+    // Daca IP-ul este valid (se afla in whitelist), permiterea accesului fara alte verificari
+    if ($is_ip_valid) {
+        return;  // Permite accesul
+    }
+
+    // Daca IP-ul nu este in whitelist, urmeaza verificarea customfield-ului si a altor setari
+    // Preluarea ID-ului campului pe baza shortname-ului 'external_course'
     $customfield_shortname = 'external_course';
     $customfield_ID = $DB->get_record('customfield_field', array('shortname' => $customfield_shortname));
 
     if ($customfield_ID) {
-        // 3. Preluarea valorii din mdl_customfield_data pentru a compara fieldid si instanceid
+        // Preluarea valorii din mdl_customfield_data pentru a compara fieldid si instanceid
         $course_id = $PAGE->course->id;  // se presupune ca $PAGE->course->id este ID-ul cursului la care accesezi pagina
         $customdata = $DB->get_record('customfield_data', array(
             'fieldid' => $customfield_ID->id,  // se compara cu fieldid-ul din mdl_customfield_data
@@ -92,33 +98,30 @@ function check_user_ip() {
         ));
 
         if ($customdata) {
-            // 4. Verificam daca exista un record valid in mdl_customfield_data si extragem valoarea 'intvalue'
+            // Verificam daca exista un record valid in mdl_customfield_data si extragem valoarea 'intvalue'
             $intvalue = $customdata->intvalue;
 
             // Conditii pentru redirectionare:
-            if ($is_ip_valid) {
-                // Daca IP-ul este in whitelist, nu se face nicio redirectionare
-                return;  // Permite accesul
+            if ($intvalue == 1) {
+                // Daca intvalue este 1, blocam accesul
+                error_log("Course_ID: {$course_id}, Access_External: {$intvalue} Invalid IP: {$user_ip} - User Details: ID={$USER->id}, Username={$USER->username} - Email={$USER->email} - Redirecting to error page.");
+                redirect(new moodle_url('/local/External_Course_Settings/error.php')); // Redirectioneaza catre pagina de eroare
             } else {
-                // Daca IP-ul nu este in whitelist
-                if ($intvalue == 1) {
-                    // Daca intvalue este 1, blocam accesul
-                    error_log("Course_ID: {$course_id}, Access_External: {$intvalue} Invalid IP: {$user_ip} - User Details: ID={$USER->id}, Username={$USER->username} - Email={$USER->email} - Redirecting to error page.");
-                    redirect(new moodle_url('/local/external_Course_settings/error.php')); // Redirectioneaza catre pagina de eroare
-                }
-                // Daca intvalue NU este 1, accesul este permis, nu se face nicio redirectionare
+                // Daca intvalue NU este 1, accesul este permis
+                return;  // Permite accesul
             }
         } else {
             // Daca nu se gaseste nicio valoare pentru customfield_data
-            error_log("Course_ID: {$course_id}, Nu s-a gasit niciun record in customfield_data pentru acest curs.");
-            redirect(new moodle_url('/local/external_Course_settings/error.php')); // Redirectioneaza catre pagina de eroare
+            error_log("Course_ID: {$course_id}, Invalid IP: {$user_ip}, Nu s-a gasit niciun record in customfield_data pentru acest curs.");
+            redirect(new moodle_url('/local/External_Course_Settings/error.php')); // Redirectioneaza catre pagina de eroare
         }
     } else {
         // Daca nu se gaseste campul cu shortname-ul 'external_course'
-        error_log("Course_ID: {$course_id}, Nu s-a gasit niciun camp cu shortname-ul specificat.");
-        redirect(new moodle_url('/local/external_Course_settings/error.php')); // Redirectioneaza catre pagina de eroare
+        error_log("Course_ID: {$course_id}, Invalid IP: {$user_ip}, Nu s-a gasit niciun camp cu shortname-ul specificat.");
+        redirect(new moodle_url('/local/External_Course_Settings/error.php')); // Redirectioneaza catre pagina de eroare
     }
 }
+
 
 // Functia care va fi apelata la accesarea unui curs
 function local_external_course_settings_extend_navigation_course($navref, $course, $context) {
